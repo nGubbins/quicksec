@@ -9,7 +9,7 @@ description = "Quick security info for a given URL"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "N G", email = "nickwgubbins@gmail.com" }]
+authors = [{ name = "lost_0", email = "l05t_0@proton.me" }]
 dependencies = ["requests>=2.28"]
 
 [project.scripts]
