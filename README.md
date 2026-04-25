@@ -1,6 +1,6 @@
 # quicksec
 
-A command-line tool for quickly auditing the security posture of any website. Pass it a URL and get a structured report covering TLS, HTTP security headers, HTTPS enforcement, and cookie flags — no config needed.
+A command-line tool and Python library for quickly auditing the security posture of any website. Pass it a URL and get a structured report covering TLS, HTTP security headers, HTTPS enforcement, and cookie flags — no config needed.
 
 [![CI](https://github.com/nGubbins/quicksec/actions/workflows/ci.yml/badge.svg)](https://github.com/nGubbins/quicksec/actions/workflows/ci.yml)
 
@@ -12,17 +12,11 @@ A command-line tool for quickly auditing the security posture of any website. Pa
 pip install quicksec
 ```
 
-Or install from source:
-
-```bash
-git clone https://github.com/nGubbins/quicksec.git
-cd quicksec
-pip install .
-```
-
 ---
 
 ## Usage
+
+### CLI
 
 ```bash
 quicksec <url>
@@ -30,12 +24,24 @@ quicksec <url>
 
 The scheme is optional — `quicksec example.com` defaults to `https://`.
 
-### Examples
-
 ```bash
 quicksec github.com
 quicksec https://example.com
 quicksec http://legacy-site.com
+```
+
+### Python
+
+```python
+import quicksec
+
+results = quicksec("github.com")  # returns a list of strings
+
+# print the full report
+print("\n".join(results))
+
+# filter for warnings and failures
+issues = [r for r in results if "[WARN]" in r or "[FAIL]" in r]
 ```
 
 ### Sample output
@@ -97,10 +103,13 @@ quicksec http://legacy-site.com
 - **Third-party vendor review** — quickly assess the security hygiene of an API or partner domain
 - **Security regression check** — spot headers that quietly disappeared after a config change
 - **CTF / bug bounty recon** — fast first-pass on a target to see what's exposed
+- **Scripting** — integrate into your own tooling using the Python API
 
 ---
 
-## Development
+## Contributing
+
+Contributions are welcome. The codebase is intentionally small — all logic lives in `src/quicksec.py`.
 
 ```bash
 git clone https://github.com/nGubbins/quicksec.git
@@ -110,6 +119,17 @@ source env/bin/activate   # Windows: env\Scripts\activate
 pip install -r requirements.txt
 pytest
 ```
+
+The core functions you'll want to work with:
+
+| Function | Description |
+|---|---|
+| `check(url)` | Runs all checks, returns `list[str]` |
+| `get_ssl_info(hostname)` | Returns cert, cipher, and TLS version as a dict |
+| `fetch(url)` | Returns `(response, error)` — wraps `requests.get` |
+| `check_https_redirect(hostname)` | Returns `True` if HTTP redirects to HTTPS |
+
+To add a new check, add your logic inside `check()` and append result lines using the `OK`, `WARN`, `FAIL`, or `INFO` prefixes. Add tests in `tests/test_quicksec.py`.
 
 ---
 
