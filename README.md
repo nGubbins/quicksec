@@ -2,7 +2,7 @@
 
 A command-line tool for quickly auditing the security posture of any website. Pass it a URL and get a structured report covering TLS, HTTP security headers, HTTPS enforcement, and cookie flags — no config needed.
 
-[![CI](https://github.com/nGubbins/site-security-check/actions/workflows/ci.yml/badge.svg)](https://github.com/nGubbins/site-security-check/actions/workflows/ci.yml)
+[![CI](https://github.com/nGubbins/quicksec/actions/workflows/ci.yml/badge.svg)](https://github.com/nGubbins/quicksec/actions/workflows/ci.yml)
 
 ---
 
@@ -15,8 +15,8 @@ pip install quicksec
 Or install from source:
 
 ```bash
-git clone https://github.com/nGubbins/site-security-check.git
-cd site-security-check
+git clone https://github.com/nGubbins/quicksec.git
+cd quicksec
 pip install .
 ```
 
@@ -103,8 +103,8 @@ quicksec http://legacy-site.com
 ## Development
 
 ```bash
-git clone https://github.com/nGubbins/site-security-check.git
-cd site-security-check
+git clone https://github.com/nGubbins/quicksec.git
+cd quicksec
 python -m venv env
 source env/bin/activate   # Windows: env\Scripts\activate
 pip install -r requirements.txt
