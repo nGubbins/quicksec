@@ -7,6 +7,7 @@ import sys
 import ssl
 import socket
 import datetime
+import types
 import urllib.parse
 import requests
 from requests.exceptions import RequestException
@@ -179,6 +180,12 @@ def main(url=None):
 
     print(f"\n{'='*58}\n")
 
+
+class _QuicksecModule(types.ModuleType):
+    def __call__(self, url):
+        main(url)
+
+sys.modules[__name__].__class__ = _QuicksecModule
 
 if __name__ == "__main__":
     main()
