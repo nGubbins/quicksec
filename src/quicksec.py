@@ -1,6 +1,8 @@
 """quicksec — quick security info for a given URL.
 
-Usage: quicksec <url>
+Usage:
+    CLI:    quicksec <url>
+    Python: import quicksec; results = quicksec("github.com")
 """
 
 import sys
@@ -62,7 +64,6 @@ def parse_ssl_date(date_str):
 
 
 def check_https_redirect(hostname):
-    """Return True if plain HTTP redirects to HTTPS."""
     try:
         r = requests.get(f"http://{hostname}", timeout=10, allow_redirects=True)
         return r.url.startswith("https://")
@@ -78,34 +79,24 @@ def fetch(url):
         return None, str(e)
 
 
-def section(title):
-    print(f"\n--- {title} ---")
+def check(url):
+    """Run all security checks and return results as a list of strings."""
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url
 
-
-def main(url=None):
-    if url is None:
-        if len(sys.argv) < 2:
-            print("Usage: quicksec <url>")
-            sys.exit(1)
-        url = sys.argv[1]
-
-    raw = url
-    if not raw.startswith(("http://", "https://")):
-        raw = "https://" + raw
-
-    parsed = urllib.parse.urlparse(raw)
+    parsed = urllib.parse.urlparse(url)
     hostname = parsed.hostname
-    url = raw
+    lines = []
 
-    print(f"\n{'='*58}")
-    print(f"  Security check  >>  {hostname}")
-    print(f"{'='*58}")
+    lines.append(f"{'='*58}")
+    lines.append(f"  Security check  >>  {hostname}")
+    lines.append(f"{'='*58}")
 
     # ── SSL / TLS ─────────────────────────────────────────────
-    section("SSL / TLS")
+    lines.append("\n--- SSL / TLS ---")
     ssl_info = get_ssl_info(hostname)
     if ssl_info["error"]:
-        print(f"{FAIL} {ssl_info['error']}")
+        lines.append(f"{FAIL} {ssl_info['error']}")
     else:
         cert = ssl_info["cert"]
         cn = get_cn(cert.get("subject", []))
@@ -113,51 +104,51 @@ def main(url=None):
         days_left = (not_after - datetime.datetime.now(datetime.UTC)).days
 
         expiry_tag = OK if days_left > 30 else (WARN if days_left > 0 else FAIL)
-        print(f"{OK   } Valid certificate  CN={cn}")
-        print(f"{expiry_tag} Expires {not_after.date()}  ({days_left} days)")
-        print(f"{INFO } Protocol: {ssl_info['tls_version']}  |  Cipher: {ssl_info['cipher']}")
+        lines.append(f"{OK   } Valid certificate  CN={cn}")
+        lines.append(f"{expiry_tag} Expires {not_after.date()}  ({days_left} days)")
+        lines.append(f"{INFO } Protocol: {ssl_info['tls_version']}  |  Cipher: {ssl_info['cipher']}")
 
         san = cert.get("subjectAltName", [])
         if san:
             names = ", ".join(v for _, v in san)
-            print(f"{INFO } SANs: {names}")
+            lines.append(f"{INFO } SANs: {names}")
 
     # ── HTTPS redirect ────────────────────────────────────────
-    section("HTTPS redirect")
+    lines.append("\n--- HTTPS redirect ---")
     redirects = check_https_redirect(hostname)
     tag = OK if redirects else WARN
-    print(f"{tag} HTTP -> HTTPS redirect: {'yes' if redirects else 'no'}")
+    lines.append(f"{tag} HTTP -> HTTPS redirect: {'yes' if redirects else 'no'}")
 
-    # ── HTTP response & headers ───────────────────────────────
-    section("Security headers")
+    # ── Security headers ──────────────────────────────────────
+    lines.append("\n--- Security headers ---")
     resp, err = fetch(url)
     if err or resp is None:
-        print(f"{FAIL} Could not fetch {url}: {err}")
+        lines.append(f"{FAIL} Could not fetch {url}: {err}")
     else:
         hdrs = resp.headers
 
         server = hdrs.get("Server")
         if server:
-            print(f"{WARN} Server header present: {server}")
+            lines.append(f"{WARN} Server header present: {server}")
         else:
-            print(f"{OK  } Server header hidden")
+            lines.append(f"{OK  } Server header hidden")
 
         x_powered = hdrs.get("X-Powered-By")
         if x_powered:
-            print(f"{WARN} X-Powered-By exposed: {x_powered}")
+            lines.append(f"{WARN} X-Powered-By exposed: {x_powered}")
 
         for hdr in SECURITY_HEADERS:
             val = hdrs.get(hdr)
             if val:
                 short = val if len(val) <= 60 else val[:57] + "..."
-                print(f"{OK  } {hdr}: {short}")
+                lines.append(f"{OK  } {hdr}: {short}")
             else:
-                print(f"{WARN} {hdr}: missing")
+                lines.append(f"{WARN} {hdr}: missing")
 
         # ── Cookies ───────────────────────────────────────────
-        section("Cookies")
+        lines.append("\n--- Cookies ---")
         if not resp.cookies:
-            print(f"{INFO } No cookies set")
+            lines.append(f"{INFO } No cookies set")
         else:
             for cookie in resp.cookies:
                 flags = []
@@ -176,14 +167,24 @@ def main(url=None):
                 tag = OK if not missing else WARN
                 flag_str = ", ".join(flags) if flags else "none"
                 miss_str = f"  (missing: {', '.join(missing)})" if missing else ""
-                print(f"{tag} {cookie.name}  [{flag_str}]{miss_str}")
+                lines.append(f"{tag} {cookie.name}  [{flag_str}]{miss_str}")
 
-    print(f"\n{'='*58}\n")
+    lines.append(f"\n{'='*58}")
+    return lines
+
+
+def main(url=None):
+    if url is None:
+        if len(sys.argv) < 2:
+            print("Usage: quicksec <url>")
+            sys.exit(1)
+        url = sys.argv[1]
+    print("\n" + "\n".join(check(url)) + "\n")
 
 
 class _QuicksecModule(types.ModuleType):
     def __call__(self, url):
-        main(url)
+        return check(url)
 
 sys.modules[__name__].__class__ = _QuicksecModule
 
