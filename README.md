@@ -44,6 +44,14 @@ print("\n".join(results))
 issues = [r for r in results if "[WARN]" in r or "[FAIL]" in r]
 ```
 
+Or import `check` directly:
+
+```python
+from quicksec import check
+
+results = check("github.com")
+```
+
 ### Sample output
 
 ```
