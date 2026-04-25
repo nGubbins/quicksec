@@ -81,12 +81,14 @@ def section(title):
     print(f"\n--- {title} ---")
 
 
-def main():
-    if len(sys.argv) < 2:
-        print("Usage: quicksec <url>")
-        sys.exit(1)
+def main(url=None):
+    if url is None:
+        if len(sys.argv) < 2:
+            print("Usage: quicksec <url>")
+            sys.exit(1)
+        url = sys.argv[1]
 
-    raw = sys.argv[1]
+    raw = url
     if not raw.startswith(("http://", "https://")):
         raw = "https://" + raw
 
